@@ -15,10 +15,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Limit memory usage during build to prevent SIGKILL
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Optimization for low memory servers (SIGKILL fix)
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=768"
 
-RUN npm run build
+# Run build without turbopack and with limited workers
+RUN npm run build -- --no-turbo
 
 # Production image, copy all the files and run next
 FROM base AS runner
