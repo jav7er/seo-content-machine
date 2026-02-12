@@ -29,8 +29,16 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { Post } from "@/types/wordpress";
+import { FilterState } from "./DashboardFilters";
 
 interface PostsTableProps {
     initialPosts: Post[];
@@ -38,6 +46,7 @@ interface PostsTableProps {
     gscData?: Record<string, { clicks: number; impressions: number }>;
     ga4Data?: Record<string, { activeUsers: number; pageViews: number }>;
     storedAudits?: Record<number, any>;
+    filters?: FilterState;
 }
 
 interface PostTableItem {
@@ -55,21 +64,64 @@ interface PostTableItem {
     recommendation?: string;
     priority?: string;
     redirectionUrl?: string;
+    manualStatus?: string;
 }
 
-export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {}, storedAudits = {} }: PostsTableProps) {
+export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {}, storedAudits = {}, filters }: PostsTableProps) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
+    const [localAudits, setLocalAudits] = React.useState(storedAudits);
+
+    const handleStatusChange = async (postId: number, status: string) => {
+        try {
+            await fetch('/api/post/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ postId, status }),
+            });
+            setLocalAudits(prev => ({
+                ...prev,
+                [postId]: {
+                    ...prev[postId],
+                    manualStatus: status,
+                    modifiedAt: new Date().toISOString()
+                }
+            }));
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    };
 
     const data = React.useMemo<PostTableItem[]>(() => {
-        return initialPosts.map((post) => {
+        let filteredPosts = initialPosts.filter(p => p !== null).map((post) => {
             const url = post.link;
             let path = "/";
             try { path = new URL(url).pathname; } catch { }
 
-            const gsc = gscData[url] || gscData[url.replace(/\/$/, "")] || { clicks: 0, impressions: 0 };
-            const ga4 = ga4Data[path] || ga4Data[path.replace(/\/$/, "")] || { activeUsers: 0, pageViews: 0 };
-            const audit = storedAudits[post.id];
+            const audit = localAudits[post.id] || storedAudits[post.id];
             const meta = post.meta || {};
+            const mStatus = audit?.manualStatus;
+            const prevUrl = audit?.previousUrl;
+
+            let gsc = { ...(gscData[url] || gscData[url.replace(/\/$/, "")] || { clicks: 0, impressions: 0 }) };
+            let ga4 = { ...(ga4Data[path] || ga4Data[path.replace(/\/$/, "")] || { activeUsers: 0, pageViews: 0 }) };
+
+            // Si hay una URL previa, sumar sus datos
+            if (prevUrl) {
+                const prevGsc = gscData[prevUrl] || gscData[prevUrl.replace(/\/$/, "")] || { clicks: 0, impressions: 0 };
+                let prevPath = "/";
+                try { prevPath = new URL(prevUrl).pathname; } catch { }
+                const prevGa4 = ga4Data[prevPath] || ga4Data[prevPath.replace(/\/$/, "")] || { activeUsers: 0, pageViews: 0 };
+
+                gsc.clicks += prevGsc.clicks;
+                gsc.impressions += prevGsc.impressions;
+                ga4.pageViews += prevGa4.pageViews;
+            }
+
+            const isAudited = mStatus === 'audited' || (audit && !mStatus && audit.recommendation !== 'pending');
+            const isRewritten = mStatus === 'rewritten' || audit?.rewrittenAt;
+            const isRedirected = mStatus === 'redirected' || audit?.redirectionUrl;
 
             return {
                 id: post.id,
@@ -81,14 +133,98 @@ export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {
                 impressions: gsc.impressions,
                 pageViews: ga4.pageViews,
                 focusKeyword: meta.rank_math_focus_keyword || "",
-                auditStatus: audit ? "Audited" : "Pending",
-                rewrittenAt: audit?.rewrittenAt,
+                auditStatus: (isAudited || isRewritten || isRedirected) ? "Audited" : "Pending" as "Audited" | "Pending",
+                rewrittenAt: isRewritten ? (audit?.rewrittenAt || new Date().toISOString()) : undefined,
                 recommendation: audit?.recommendation,
                 priority: audit?.priority,
-                redirectionUrl: audit?.redirectionUrl
+                redirectionUrl: isRedirected ? (audit?.redirectionUrl || '#') : undefined,
+                manualStatus: mStatus
             };
         });
-    }, [initialPosts, gscData, ga4Data, storedAudits]);
+
+        // Aplicar filtros
+        if (filters) {
+            filteredPosts = filteredPosts.filter((post) => {
+                // Búsqueda por título o keyword
+                if (filters.search) {
+                    const searchLower = filters.search.toLowerCase();
+                    const titleMatch = post.title.toLowerCase().includes(searchLower);
+                    const keywordMatch = post.focusKeyword.toLowerCase().includes(searchLower);
+                    if (!titleMatch && !keywordMatch) return false;
+                }
+
+                // Estado de auditoría
+                if (filters.auditStatus && filters.auditStatus !== 'all') {
+                    switch (filters.auditStatus) {
+                        case 'audited':
+                            if (post.auditStatus !== "Audited") return false;
+                            break;
+                        case 'pending':
+                            if (post.auditStatus !== "Pending") return false;
+                            break;
+                        case 'rewritten':
+                            if (!post.rewrittenAt) return false;
+                            break;
+                        case 'redirected':
+                            if (!post.redirectionUrl) return false;
+                            break;
+                    }
+                }
+
+                // Tiene clicks
+                if (filters.hasClicks && filters.hasClicks !== 'all') {
+                    if (filters.hasClicks === 'yes' && post.clicks === 0) return false;
+                    if (filters.hasClicks === 'no' && post.clicks > 0) return false;
+                }
+
+                // Clicks mínimos
+                if (filters.minClicks && post.clicks < parseInt(filters.minClicks)) return false;
+
+                // Tiene impresiones
+                if (filters.hasImpressions && filters.hasImpressions !== 'all') {
+                    if (filters.hasImpressions === 'yes' && post.impressions === 0) return false;
+                    if (filters.hasImpressions === 'no' && post.impressions > 0) return false;
+                }
+
+                // Impresiones mínimas
+                if (filters.minImpressions && post.impressions < parseInt(filters.minImpressions)) return false;
+
+                // Tiene keyword
+                if (filters.hasKeyword && filters.hasKeyword !== 'all') {
+                    const hasKeyword = post.focusKeyword && post.focusKeyword.trim() !== '';
+                    if (filters.hasKeyword === 'yes' && !hasKeyword) return false;
+                    if (filters.hasKeyword === 'no' && hasKeyword) return false;
+                }
+
+                return true;
+            });
+
+            // Ordenar
+            if (filters.sortBy && filters.sortBy !== 'none') {
+                filteredPosts.sort((a, b) => {
+                    const [field, direction] = filters.sortBy.split('-');
+                    const isAsc = direction === 'asc';
+                    
+                    switch (field) {
+                        case 'clicks':
+                            return isAsc ? a.clicks - b.clicks : b.clicks - a.clicks;
+                        case 'impressions':
+                            return isAsc ? a.impressions - b.impressions : b.impressions - a.impressions;
+                        case 'pageviews':
+                            return isAsc ? a.pageViews - b.pageViews : b.pageViews - a.pageViews;
+                        case 'date':
+                            return isAsc ? a.date.getTime() - b.date.getTime() : b.date.getTime() - a.date.getTime();
+                        case 'modified':
+                            return isAsc ? a.modified.getTime() - b.modified.getTime() : b.modified.getTime() - a.modified.getTime();
+                        default:
+                            return 0;
+                    }
+                });
+            }
+        }
+
+        return filteredPosts;
+    }, [initialPosts, gscData, ga4Data, storedAudits, filters, localAudits]);
 
     const columns: ColumnDef<PostTableItem>[] = [
         {
@@ -198,12 +334,19 @@ export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {
                 const status = row.getValue("auditStatus") as string;
                 const rewrittenAt = row.original.rewrittenAt;
                 const rec = row.original.recommendation;
+                const manualStatus = row.original.manualStatus;
                 return (
                     <div className="flex flex-col gap-1.5">
                         <div className="flex gap-1">
-                            <Badge variant={status === "Audited" ? "default" : "outline"} className="text-[9px] h-4 uppercase px-1">
-                                {status === "Audited" ? "Auditado" : "Pendiente"}
-                            </Badge>
+                            {manualStatus && manualStatus !== 'none' ? (
+                                <Badge variant="default" className="text-[9px] h-4 uppercase px-1 bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
+                                    {manualStatus}
+                                </Badge>
+                            ) : (
+                                <Badge variant={status === "Audited" ? "default" : "outline"} className="text-[9px] h-4 uppercase px-1">
+                                    {status === "Audited" ? "Auditado" : "Pendiente"}
+                                </Badge>
+                            )}
                             {rewrittenAt && (
                                 <Badge variant="secondary" className="text-[9px] h-4 uppercase px-1 bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                                     Reescrito
@@ -228,6 +371,7 @@ export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {
             id: "actions",
             cell: ({ row }) => {
                 const post = row.original;
+                const currentStatus = post.manualStatus || 'none';
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -240,6 +384,22 @@ export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(post.id.toString())}>
                                 Copiar ID
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">Cambiar Estado</DropdownMenuLabel>
+                            <div className="p-2">
+                                <Select value={currentStatus} onValueChange={(value) => handleStatusChange(post.id, value)}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Sin estado" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Sin estado</SelectItem>
+                                        <SelectItem value="pending">Pendiente</SelectItem>
+                                        <SelectItem value="audited">Auditado</SelectItem>
+                                        <SelectItem value="rewritten">Reescrito</SelectItem>
+                                        <SelectItem value="redirected">Redirigido</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <DropdownMenuSeparator />
                             <Link href={`/post/${post.id}`}>
                                 <DropdownMenuItem>

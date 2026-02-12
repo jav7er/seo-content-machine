@@ -23,7 +23,9 @@ db.exec(`
         redirection_url TEXT,
         last_audit_at TEXT,
         created_at TEXT,
-        modified_at TEXT
+        modified_at TEXT,
+        manual_status TEXT,
+        previous_url TEXT
     )
 `);
 
@@ -37,14 +39,16 @@ export interface AuditRecord {
     last_audit_at: string;
     created_at?: string;
     modified_at?: string;
+    manual_status?: string;
+    previous_url?: string;
 }
 
 export const auditDb = {
     save: (record: AuditRecord) => {
         const stmt = db.prepare(`
             INSERT OR REPLACE INTO audit_logs 
-            (post_id, status, priority, score, rewritten_at, redirection_url, last_audit_at, created_at, modified_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (post_id, status, priority, score, rewritten_at, redirection_url, last_audit_at, created_at, modified_at, manual_status, previous_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         return stmt.run(
             record.post_id,
@@ -55,7 +59,9 @@ export const auditDb = {
             record.redirection_url || null,
             record.last_audit_at,
             record.created_at || null,
-            record.modified_at || null
+            record.modified_at || null,
+            record.manual_status || null,
+            record.previous_url || null
         );
     },
 

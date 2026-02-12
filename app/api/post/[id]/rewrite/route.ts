@@ -25,6 +25,11 @@ export async function POST(
                 return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
             }
 
+            // Get existing post to compare slug and keep track of previous URL
+            const existingPost = await fetchPost(id);
+            const previousUrl = existingPost.link;
+            const slugChanged = slug && slug !== existingPost.slug;
+
             const meta: Record<string, string> = {};
             if (focus_keyword) meta.rank_math_focus_keyword = focus_keyword;
             if (rank_math_title) meta.rank_math_title = rank_math_title;
@@ -37,13 +42,25 @@ export async function POST(
                 meta: Object.keys(meta).length > 0 ? meta : undefined,
             });
 
-            // Update local audit to mark as rewritten
+            // Update local audit to mark as rewritten and store previous URL if slug changed
             const audits = await getAudits();
             const existing = audits[id];
             if (existing) {
                 await saveAudit({
                     ...existing,
-                    rewrittenAt: new Date().toISOString()
+                    rewrittenAt: new Date().toISOString(),
+                    previousUrl: slugChanged ? previousUrl : existing.previousUrl
+                });
+            } else {
+                // If no audit exists, create a minimal one to track previous URL
+                await saveAudit({
+                    postId: id,
+                    lastAuditDate: new Date().toISOString(),
+                    recommendation: 'audited',
+                    priority: 'medium',
+                    score: 0,
+                    rewrittenAt: new Date().toISOString(),
+                    previousUrl: slugChanged ? previousUrl : undefined
                 });
             }
 
