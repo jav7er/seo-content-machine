@@ -8,7 +8,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
-      - ./.env:/app/.env
+      - seo_data:/app/data
     environment:
       - NODE_ENV=production
+      # Add other environment variables here if running locally with docker-compose
+      # For Easypanel, configure them in the "Environment" tab
+
+volumes:
+  seo_data:
