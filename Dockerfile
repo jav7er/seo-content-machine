@@ -15,9 +15,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous education about usage.
-# Learn more here: https://nextjs.org/telemetry
-# ENV NEXT_TELEMETRY_DISABLED 1
+# Limit memory usage during build to prevent SIGKILL
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 RUN npm run build
 
