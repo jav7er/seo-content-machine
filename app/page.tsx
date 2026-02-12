@@ -1,65 +1,123 @@
-import Image from "next/image";
+import { Suspense } from "react";
+import { fetchPosts } from "@/lib/wordpress";
+import { fetchBulkGSCData } from "@/lib/gsc";
+import { fetchBulkGA4Data } from "@/lib/ga4";
+import { getAudits } from "@/lib/storage";
+import { PostsTable } from "@/components/posts-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Activity, FileText, MousePointerClick, RefreshCcw } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-export default function Home() {
+export const revalidate = 3600;
+
+async function DashboardStats() {
+  // Estos podrían ser sumatorios reales de los datos bulk en el futuro
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total de Posts</CardTitle>
+          <FileText className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">124</div>
+          <p className="text-xs text-muted-foreground">Analizados en el sitio</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Clicks Totales (30d)</CardTitle>
+          <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">--</div>
+          <p className="text-xs text-muted-foreground">Datos de Search Console</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Usuarios Blog (30d)</CardTitle>
+          <Activity className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">--</div>
+          <p className="text-xs text-muted-foreground">Usuarios activos detectados</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Auditorías Guardadas</CardTitle>
+          <RefreshCcw className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">Real</div>
+          <p className="text-xs text-muted-foreground">Revisiones locales persistidas</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default async function DashboardPage() {
+  const gscEndDate = new Date().toISOString().split("T")[0];
+  const gscStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const siteUrl = process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx";
+  const propertyId = process.env.GA4_PROPERTY_ID || "";
+
+  let initialData: { posts: any[], total: number } = { posts: [], total: 0 };
+  let gscBulk: Record<string, any> = {};
+  let ga4Bulk: Record<string, any> = {};
+  let storedAudits: Record<number, any> = {};
+
+  try {
+    const [postsRes, gscRes, ga4Res, auditsRes] = await Promise.all([
+      fetchPosts(1, 100),
+      fetchBulkGSCData(siteUrl, gscStartDate, gscEndDate),
+      fetchBulkGA4Data(propertyId, "30daysAgo", "today"),
+      getAudits()
+    ]);
+
+    initialData = postsRes;
+    gscBulk = gscRes;
+    ga4Bulk = ga4Res;
+    storedAudits = auditsRes;
+  } catch (e) {
+    console.error("Error al obtener datos para el dashboard", e);
+  }
+
+  return (
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Panel de Auditoría</h2>
+        <div className="flex items-center space-x-4">
+          <Link href="/post/new">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <FileText className="mr-2 h-4 w-4" />
+              Nuevo Post (IA)
+            </Button>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </div>
+      <Suspense fallback={<div>Cargando estadísticas...</div>}>
+        <DashboardStats />
+      </Suspense>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-7 border-t-4 border-t-primary">
+          <CardHeader>
+            <CardTitle>Artículos del Blog</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PostsTable
+              initialPosts={initialData.posts}
+              totalCount={initialData.total}
+              gscData={gscBulk}
+              ga4Data={ga4Bulk}
+              storedAudits={storedAudits}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Configuración de Credenciales
+
+El proyecto requiere las siguientes variables de entorno en el archivo `.env`:
+
+### WordPress API
+- `NEXT_PUBLIC_WORDPRESS_URL`: URL de la API REST de WordPress
+- `WORDPRESS_USERNAME`: Nombre de usuario para autenticación
+- `WORDPRESS_APP_PASSWORD`: Contraseña de aplicación para WordPress
+
+### Google Search Console
+- `GSC_SITE_URL`: URL del sitio en GSC (formato: sc-domain:dominio.com)
+- `GSC_CLIENT_EMAIL`: Email del service account de Google
+- `GSC_PRIVATE_KEY`: Clave privada del service account
+
+### Google Analytics 4
+- `GA4_PROPERTY_ID`: ID de propiedad de GA4
+- `GA4_CLIENT_EMAIL`: Email del service account para GA4
+- `GA4_PRIVATE_KEY`: Clave privada del service account para GA4
+
+### OpenRouter API
+- `OPENROUTER_API_KEY`: Clave API para OpenRouter
+- `OPENROUTER_MODEL`: Modelo a utilizar (actualmente: google/gemini-2.0-flash-001)

@@ -1,0 +1,53 @@
+{
+  "4441": {
+    "postId": 4441,
+    "lastAuditDate": "2026-02-11T21:40:11.673Z",
+    "recommendation": "REESCRIBIR",
+    "priority": "ALTA",
+    "score": 30,
+    "rewrittenAt": "2026-02-11T21:54:10.457Z"
+  },
+  "4455": {
+    "postId": 4455,
+    "lastAuditDate": "2026-02-11T21:29:45.346Z",
+    "recommendation": "REESCRIBIR",
+    "priority": "ALTA",
+    "score": 30
+  },
+  "4749": {
+    "postId": 4749,
+    "lastAuditDate": "2026-02-11T21:29:45.322Z",
+    "recommendation": "REESCRIBIR",
+    "priority": "ALTA",
+    "score": 25
+  },
+  "5413": {
+    "postId": 5413,
+    "lastAuditDate": "2026-02-11T21:29:45.296Z",
+    "recommendation": "ELIMINAR_REDIRECCIONAR",
+    "priority": "ALTA",
+    "score": 20
+  },
+  "5477": {
+    "postId": 5477,
+    "lastAuditDate": "2026-02-11T21:29:45.298Z",
+    "recommendation": "ELIMINAR_REDIRECCIONAR",
+    "priority": "ALTA",
+    "score": 20
+  },
+  "25330": {
+    "postId": 25330,
+    "lastAuditDate": "2026-02-11T22:30:21.581Z",
+    "recommendation": "ACTUALIZAR",
+    "priority": "ALTA",
+    "score": 55,
+    "rewrittenAt": "2026-02-11T22:57:18.333Z"
+  },
+  "34200": {
+    "postId": 34200,
+    "lastAuditDate": "2026-02-11T23:07:14.320Z",
+    "recommendation": "ACTUALIZAR",
+    "priority": "ALTA",
+    "score": 40
+  }
+}
