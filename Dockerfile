@@ -18,9 +18,10 @@ COPY . .
 # Optimization for low memory servers (SIGKILL fix)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=768"
+ENV GENERATE_SOURCEMAP=false
 
-# Run build without turbopack and with limited workers
-RUN npm run build -- --no-turbo
+# Run build with limited memory and no extra flags
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
