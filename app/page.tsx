@@ -4,7 +4,8 @@ import { fetchBulkGA4Data } from "@/lib/ga4";
 import { getAudits } from "@/lib/storage";
 import { DashboardClient } from "@/components/DashboardClient";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardPage(props: { searchParams: Promise<{ range?: string }> }) {
   const searchParams = await props.searchParams;
