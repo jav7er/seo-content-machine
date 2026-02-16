@@ -16,7 +16,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set memory limit for build process to avoid OOM in small VMs
-ENV NODE_OPTIONS="--max-old-space-size=1536"
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_BUILD_MAX_WORKERS=1
 RUN npm run build
 
 # Production image, copy all the files and run next
