@@ -15,10 +15,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set memory limit for build process to avoid OOM in small VMs
+# Set memory limit and workers for build process to avoid OOM in small VMs
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_BUILD_MAX_WORKERS=1
+# Disable linting and typechecking during build to save RAM
+ENV NEXT_DISABLE_ESLINT=1
+ENV NEXT_DISABLE_TYPECHECK=1
 RUN npm run build
 
 # Production image, copy all the files and run next
