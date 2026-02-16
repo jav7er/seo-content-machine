@@ -108,7 +108,8 @@ export async function analyzeContent(
   2. Optimización: ¿Está realmente optimizado para los términos que traen tráfico?
   3. Relevancia de Negocio: Considera si el tema es actual o si ha quedado obsoleto. Usa la fecha de hoy (${today}) para determinar la antigüedad real.
   4. Canibalización: Si detectas que el tema es muy genérico y podría chocar con otros artículos del mismo blog, indica el nivel de riesgo y razonamiento.
-  5. Popularidad: Según impresiones y clicks, ¿hay interés real? Si ambos son 0, el artículo no tiene tracción orgánica.
+  5. Período de Gracia: MUY IMPORTANTE. Si el artículo fue creado o modificado recientemente (en los últimos 60 días según la ÚLTIMA ACTUALIZACIÓN: ${metadata.lastUpdated}), es NORMAL que tenga pocos o cero clicks/impresiones. No penalices ni recomiendes REESCRIBIR solo por falta de tráfico si el cambio es reciente.
+  6. Popularidad: Según impresiones y clicks, ¿hay interés real? Si ambos son 0 y el artículo tiene más de 90 días, indica que no tiene tracción orgánica.
 
   RESPONDE EXCLUSIVAMENTE EN FORMATO JSON (en español):
   {

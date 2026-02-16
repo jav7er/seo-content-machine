@@ -8,7 +8,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
-      - ./.env:/app/.env
+      - seo_data:/app/data
     environment:
       - NODE_ENV=production
+      # Environment variables should be set in EasyPanel or .env file
+      # DO NOT commit secrets here
+
+volumes:
+  seo_data:

@@ -15,10 +15,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous education about usage.
-# Learn more here: https://nextjs.org/telemetry
-# ENV NEXT_TELEMETRY_DISABLED 1
-
+# Set memory limit for build process to avoid OOM in small VMs
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -38,19 +36,22 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
-# Ensure data directory exists for SQLite
-RUN mkdir -p data && chown nextjs:nodejs data
+# Ensure data directory exists for SQLite and has correct permissions
+RUN mkdir -p data && chown -R nextjs:nodejs data
 
 USER nextjs
 
 EXPOSE 3000
 
 ENV PORT 3000
-# set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+# Simple healthcheck to ensure the server is responding
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+CMD ["node", "-e", "require('./scripts/validate-env.js'); require('./server.js');"]

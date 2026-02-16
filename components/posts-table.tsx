@@ -460,7 +460,7 @@ export function PostsTable({ initialPosts, totalCount, gscData = {}, ga4Data = {
                         </TableRow>
                     ))}
                 </TableHeader>
-                <TableBody>
+                <TableBody className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {table.getRowModel().rows?.length ? (
                         table.getRowModel().rows.map((row) => (
                             <TableRow key={row.id}>

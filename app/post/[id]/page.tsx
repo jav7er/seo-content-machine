@@ -5,7 +5,7 @@ import { fetchPost, getWordCount } from "@/lib/wordpress";
 import { fetchGSCData } from "@/lib/gsc";
 import { fetchGA4Data } from "@/lib/ga4";
 import { analyzeContent } from "@/lib/ai";
-import { saveAudit } from "@/lib/storage";
+import { saveAudit, getAudits } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +30,57 @@ export default async function PostPage({ params }: PageProps) {
         const endDate = new Date().toISOString().split("T")[0];
         const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
+        // Obtener auditoría previa para ver si hay una URL anterior
+        const audits = await getAudits();
+        const audit = audits[id];
+        const prevUrl = audit?.previousUrl;
+
         const [gscData, ga4Data] = await Promise.all([
             fetchGSCData(process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx", startDate, endDate, post.link),
             fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate, new URL(post.link).pathname),
         ]);
+
+        // Si hay una URL previa, combinar estadísticas
+        if (prevUrl) {
+            try {
+                const prevPath = new URL(prevUrl).pathname;
+                const [prevGsc, prevGa4] = await Promise.all([
+                    fetchGSCData(process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx", startDate, endDate, prevUrl),
+                    fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate, prevPath),
+                ]);
+
+                gscData.clicks += prevGsc.clicks;
+                gscData.impressions += prevGsc.impressions;
+                // Recalcular CTR y Posición (aproximado)
+                const totalImpressions = gscData.impressions;
+                if (totalImpressions > 0) {
+                    gscData.ctr = gscData.clicks / totalImpressions;
+                }
+                // Posición media ponderada por impresiones
+                const weight1 = gscData.impressions - prevGsc.impressions;
+                const weight2 = prevGsc.impressions;
+                if (totalImpressions > 0) {
+                    gscData.position = ((gscData.position * weight1) + (prevGsc.position * weight2)) / totalImpressions;
+                }
+                
+                ga4Data.activeUsers += prevGa4.activeUsers;
+                // Combinar top queries
+                const queryMap = new Map();
+                [...gscData.topQueries, ...prevGsc.topQueries].forEach(q => {
+                    const key = q.keys[0];
+                    if (queryMap.has(key)) {
+                        const existing = queryMap.get(key);
+                        existing.clicks += q.clicks;
+                        existing.impressions += q.impressions;
+                    } else {
+                        queryMap.set(key, { ...q });
+                    }
+                });
+                gscData.topQueries = Array.from(queryMap.values()).sort((a, b) => b.clicks - a.clicks);
+            } catch (e) {
+                console.warn("Error al combinar estadísticas de URL previa:", e);
+            }
+        }
 
         const analysis = await analyzeContent(
             post.content.rendered,
@@ -51,7 +98,8 @@ export default async function PostPage({ params }: PageProps) {
             score: analysis.seoScore,
             createdAt: post.date,
             modifiedAt: post.modified,
-            redirectionUrl: analysis.redirectionTarget
+            redirectionUrl: analysis.redirectionTarget,
+            previousUrl: prevUrl // Preservar la URL previa
         });
 
         const getStatusIcon = (rec: string) => {

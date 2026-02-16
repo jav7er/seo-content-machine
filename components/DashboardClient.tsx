@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchPosts } from "@/lib/wordpress";
 import { fetchBulkGSCData } from "@/lib/gsc";
@@ -9,7 +9,7 @@ import { getAudits } from "@/lib/storage";
 import { PostsTable } from "@/components/posts-table";
 import { DashboardFilters, FilterState } from "./DashboardFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, FileText, MousePointerClick, RefreshCcw, Calendar } from "lucide-react";
+import { Activity, FileText, MousePointerClick, RefreshCcw, Calendar, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export function DashboardClient({ 
   initialData, 
@@ -36,6 +39,7 @@ export function DashboardClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentRange = searchParams.get('range') || '30';
+  const [isPending, startTransition] = useTransition();
 
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -57,7 +61,9 @@ export function DashboardClient({
   const handleRangeChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('range', value);
-    router.push(`/?${params.toString()}`);
+    startTransition(() => {
+      router.push(`/?${params.toString()}`);
+    });
   };
 
   const rangeLabels: Record<string, string> = {
@@ -68,7 +74,21 @@ export function DashboardClient({
   };
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-4 p-8 pt-6 relative">
+      {isPending && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/10 backdrop-blur-[2px]">
+          <div className="bg-white p-6 rounded-xl shadow-2xl border flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
+            <div className="relative">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+              <div className="absolute inset-0 h-12 w-12 rounded-full border-4 border-blue-100 -z-10"></div>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-900">Procesando información</p>
+              <p className="text-sm text-slate-500">Sincronizando con WordPress y Google...</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Panel de Auditoría</h2>
         <div className="flex items-center space-x-4">
@@ -150,9 +170,20 @@ export function DashboardClient({
       <DashboardFilters
         filters={filters}
         onFiltersChange={setFilters}
-        resultCount={0} // Se actualizará después
+        resultCount={initialData.length}
         totalPosts={totalCount}
       />
+
+      {totalCount === 0 && (
+        <Alert variant="destructive" className="bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error de conexión con WordPress</AlertTitle>
+          <AlertDescription>
+            No se pudieron cargar los artículos del blog. Esto puede deberse a un error 503 en el servidor o credenciales incorrectas. 
+            Las estadísticas de Google se muestran arriba, pero no hay artículos para auditar.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-7 border-t-4 border-t-primary">

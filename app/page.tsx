@@ -36,6 +36,20 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ran
     gscBulk = gscRes;
     ga4Bulk = ga4Res;
     storedAudits = auditsRes;
+
+    // Si la API de WordPress falla pero tenemos auditorías guardadas, mostrar esos artículos
+    if (initialData.posts.length === 0 && Object.keys(storedAudits).length > 0) {
+      initialData.posts = Object.values(storedAudits).map(audit => ({
+        id: audit.postId,
+        title: { rendered: audit.previousUrl ? `Post #${audit.postId} (URL Original: ${audit.previousUrl})` : `Post #${audit.postId}` },
+        link: audit.previousUrl || "#",
+        date: audit.createdAt || new Date().toISOString(),
+        modified: audit.modifiedAt || new Date().toISOString(),
+        status: "publish",
+        meta: { rank_math_focus_keyword: "" }
+      }));
+      initialData.total = initialData.posts.length;
+    }
   } catch (e) {
     console.error("Error al obtener datos para el dashboard", e);
   }

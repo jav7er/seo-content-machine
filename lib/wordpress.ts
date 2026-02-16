@@ -1,4 +1,5 @@
 import { Post } from "@/types/wordpress";
+import { fetchWithRetry } from "./fetcher";
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL || "https://newemage.com.mx/wp-json";
 const WP_USERNAME = process.env.WORDPRESS_USERNAME;
@@ -13,7 +14,7 @@ function getAuthHeader(): string {
  */
 export async function validateWordPressConnection(): Promise<boolean> {
   try {
-    const res = await fetch(`${WP_API_URL}/wp/v2/users/me`, {
+    const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/users/me`, {
       headers: { Authorization: getAuthHeader() },
     });
     return res.ok;
@@ -27,7 +28,7 @@ export async function validateWordPressConnection(): Promise<boolean> {
  * Fetches a single post by ID (includes meta for Rank Math)
  */
 export async function fetchPost(id: number): Promise<Post> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/posts/${id}?_embed`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/posts/${id}?_embed`, {
     headers: { Authorization: getAuthHeader() },
   });
   if (!res.ok) throw new Error(`Failed to fetch post with id ${id}`);
@@ -38,11 +39,16 @@ export async function fetchPost(id: number): Promise<Post> {
  * Fetches multiple posts with pagination
  */
 export async function fetchPosts(page = 1, perPage = 10): Promise<{ posts: Post[], total: number }> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/posts?page=${page}&per_page=${perPage}&_embed`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/posts?page=${page}&per_page=${perPage}&_embed`, {
     headers: { Authorization: getAuthHeader() },
   });
 
   if (!res.ok) {
+    console.error(`WordPress API Error: ${res.status} ${res.statusText}`);
+    try {
+      const errorBody = await res.json();
+      console.error("Error body:", errorBody);
+    } catch (e) {}
     return { posts: [], total: 0 };
   }
 
@@ -55,7 +61,7 @@ export async function fetchPosts(page = 1, perPage = 10): Promise<{ posts: Post[
  * Deletes (trashes) a post by ID
  */
 export async function deletePost(id: number): Promise<void> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/posts/${id}`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/posts/${id}`, {
     method: "DELETE",
     headers: { Authorization: getAuthHeader() },
   });
@@ -92,7 +98,7 @@ export async function updatePost(
   if (data.content) body.content = data.content;
   if (data.meta) body.meta = data.meta;
 
-  const res = await fetch(`${WP_API_URL}/wp/v2/posts/${id}`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/posts/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -124,7 +130,7 @@ export async function createPost(data: {
     rank_math_focus_keyword?: string;
   };
 }): Promise<Post> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/posts`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/posts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -145,7 +151,7 @@ export async function createPost(data: {
  * Fetches all categories
  */
 export async function fetchCategories(): Promise<Array<{ id: number; name: string; count: number }>> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/categories?per_page=100`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/categories?per_page=100`, {
     headers: { Authorization: getAuthHeader() },
   });
   if (!res.ok) return [];
@@ -156,7 +162,7 @@ export async function fetchCategories(): Promise<Array<{ id: number; name: strin
  * Fetches recent media items
  */
 export async function fetchMedia(): Promise<Array<{ id: number; source_url: string; title: { rendered: string } }>> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/media?per_page=50`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/media?per_page=50`, {
     headers: { Authorization: getAuthHeader() },
   });
   if (!res.ok) return [];
@@ -167,7 +173,7 @@ export async function fetchMedia(): Promise<Array<{ id: number; source_url: stri
  * Uploads a media file to WordPress
  */
 export async function uploadMedia(file: Buffer, filename: string, mimeType: string): Promise<any> {
-  const res = await fetch(`${WP_API_URL}/wp/v2/media`, {
+  const res = await fetchWithRetry(`${WP_API_URL}/wp/v2/media`, {
     method: "POST",
     headers: {
       "Content-Type": mimeType,

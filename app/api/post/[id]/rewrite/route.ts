@@ -82,12 +82,47 @@ export async function POST(
         const endDate = new Date().toISOString().split("T")[0];
         const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-        const [gscData, ga4Data, inventory, searchData] = await Promise.all([
+        const [gscData, ga4Data, inventory, searchData, audits] = await Promise.all([
             fetchGSCData(process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx", startDate, endDate, post.link),
             fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate, new URL(post.link).pathname),
             fetchPostInventory(),
-            searchTrends(post.title.rendered)
+            searchTrends(post.title.rendered),
+            getAudits()
         ]);
+
+        const audit = audits[id];
+        const prevUrl = audit?.previousUrl;
+
+        // Si hay una URL previa, combinar estadísticas para el análisis
+        if (prevUrl) {
+            try {
+                const prevPath = new URL(prevUrl).pathname;
+                const [prevGsc, prevGa4] = await Promise.all([
+                    fetchGSCData(process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx", startDate, endDate, prevUrl),
+                    fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate, prevPath),
+                ]);
+
+                gscData.clicks += prevGsc.clicks;
+                gscData.impressions += prevGsc.impressions;
+                ga4Data.activeUsers += prevGa4.activeUsers;
+                
+                // Combinar top queries
+                const queryMap = new Map();
+                [...gscData.topQueries, ...prevGsc.topQueries].forEach(q => {
+                    const key = q.keys[0];
+                    if (queryMap.has(key)) {
+                        const existing = queryMap.get(key);
+                        existing.clicks += q.clicks;
+                        existing.impressions += q.impressions;
+                    } else {
+                        queryMap.set(key, { ...q });
+                    }
+                });
+                gscData.topQueries = Array.from(queryMap.values()).sort((a, b) => b.clicks - a.clicks);
+            } catch (e) {
+                console.warn("Error al combinar estadísticas de URL previa en rewrite:", e);
+            }
+        }
 
         const analysis = await analyzeContent(
             post.content.rendered,
