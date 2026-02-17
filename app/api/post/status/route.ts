@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateManualStatus } from '@/lib/storage';
+import { getAudit, saveAudit } from '@/lib/storage';
 
 export async function POST(request: NextRequest) {
     try {
@@ -12,7 +12,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        await updateManualStatus(postId, status);
+        const existingAudit = await getAudit(postId);
+
+        if (!existingAudit) {
+            return NextResponse.json(
+                { success: false, error: 'Audit not found for postId' },
+                { status: 404 }
+            );
+        }
+
+        await saveAudit({
+            ...existingAudit,
+            status: status,
+            modifiedAt: new Date().toISOString(),
+        });
 
         return NextResponse.json({
             success: true,

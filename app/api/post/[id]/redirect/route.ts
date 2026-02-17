@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deletePost } from "@/lib/wordpress";
-import { updatePostRedirection } from "@/lib/storage";
+import { getAudit, saveAudit } from "@/lib/storage";
 
 export async function POST(
     req: NextRequest,
@@ -19,8 +19,23 @@ export async function POST(
         // 1. Delete post from WordPress (trashed)
         await deletePost(id);
 
-        // 2. Register redirection in our internal DB
-        await updatePostRedirection(id, targetUrl);
+        // 2. Register redirection in our internal DB (Supabase)
+        const existingAudit = await getAudit(id);
+
+        if (!existingAudit) {
+            // Si no existe, creamos una auditoría mínima con la redirección
+            return NextResponse.json(
+                { success: false, error: "Audit not found for postId, cannot set redirection" },
+                { status: 404 }
+            );
+        }
+
+        await saveAudit({
+            ...existingAudit,
+            redirectionUrl: targetUrl,
+            status: "redirected",
+            modifiedAt: new Date().toISOString(),
+        });
 
         return NextResponse.json({
             success: true,
