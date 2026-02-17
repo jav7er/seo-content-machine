@@ -16,9 +16,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set memory limit and workers for build process to avoid OOM in small VMs
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NODE_OPTIONS="--max-old-space-size=768"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_BUILD_MAX_WORKERS=1
+ENV NODE_ENV=production
 # Disable linting and typechecking during build to save RAM
 ENV NEXT_DISABLE_ESLINT=1
 ENV NEXT_DISABLE_TYPECHECK=1
