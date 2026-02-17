@@ -4,20 +4,27 @@
 
 echo "--- Iniciando preparación para cPanel ---"
 
-# Crear carpetas necesarias en standalone
-mkdir -p .next/standalone/public
-mkdir -p .next/standalone/.next/static
+# Crear carpeta de producción fuera de la carpeta de construcción para evitar errores de cPanel
+PROD_DIR="$HOME/seo_production"
+mkdir -p "$PROD_DIR"
+
+echo "--- Iniciando preparación en $PROD_DIR ---"
+
+# Copiar contenido de standalone
+cp -r .next/standalone/* "$PROD_DIR/"
+cp -r .next/standalone/.next "$PROD_DIR/"
 
 # Copiar activos estáticos
 echo "Copiando archivos estáticos..."
-cp -r public/* .next/standalone/public/ 2>/dev/null || true
-cp -r .next/static/* .next/standalone/.next/static/ 2>/dev/null || true
+cp -r public "$PROD_DIR/" 2>/dev/null || true
+mkdir -p "$PROD_DIR/.next/static"
+cp -r .next/static/* "$PROD_DIR/.next/static/" 2>/dev/null || true
 
-# Copiar archivos de arranque y base de datos
-echo "Copiando archivos de sistema y base de datos..."
-cp app.js .next/standalone/
-cp -r scripts .next/standalone/ 2>/dev/null || true
-mkdir -p .next/standalone/data
-cp data/content_audit.db .next/standalone/data/ 2>/dev/null || true
+# Asegurar persistencia de datos
+mkdir -p "$PROD_DIR/data"
+if [ -f "data/content_audit.db" ]; then
+    cp data/content_audit.db "$PROD_DIR/data/"
+fi
 
-echo "✅ Preparación completada. Ahora cambia el App Root en cPanel a: carpeta_proyecto/.next/standalone"
+echo "✅ Preparación completada. Configura el App Root en cPanel como: seo_production"
+echo "Y el Startup file como: server.js"
