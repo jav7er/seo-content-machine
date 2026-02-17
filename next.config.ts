@@ -10,10 +10,10 @@ const nextConfig = {
   },
   // Disable source maps in production to save memory during build
   productionBrowserSourceMaps: false,
-  // Experimental optimizations for low-memory environments
+  // Optimization for cPanel build
   experimental: {
     parallelServerBuildTraces: false,
-    webpackBuildWorker: false,
+    webpackBuildWorker: true, // Re-habilitado ya que tienes 6GB
   }
 };
 
