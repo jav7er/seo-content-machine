@@ -5,7 +5,8 @@ import { fetchPost, getWordCount } from "@/lib/wordpress";
 import { fetchGSCData } from "@/lib/gsc";
 import { fetchGA4Data } from "@/lib/ga4";
 import { analyzeContent } from "@/lib/ai";
-import { saveAudit, getAudits } from "@/lib/storage";
+import { saveAudit, getAudit } from "@/lib/storage";
+import { AuditRecord } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +31,9 @@ export default async function PostPage({ params }: PageProps) {
         const endDate = new Date().toISOString().split("T")[0];
         const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-        // Obtener auditoría previa para ver si hay una URL anterior
-        const audits = await getAudits();
-        const audit = audits[id];
-        const prevUrl = audit?.previousUrl;
+        // Obtener auditoría previa de Supabase
+        let auditRecord = await getAudit(id);
+        const prevUrl = auditRecord?.previousUrl;
 
         const [gscData, ga4Data] = await Promise.all([
             fetchGSCData(process.env.GSC_SITE_URL || "sc-domain:newemage.com.mx", startDate, endDate, post.link),
@@ -89,8 +89,9 @@ export default async function PostPage({ params }: PageProps) {
             { lastUpdated: post.modified, wordCount: getWordCount(post.content.rendered) }
         );
 
-        // Guardar resultado localmente
-        await saveAudit({
+        // Guardar/Actualizar resultado en Supabase
+        auditRecord = await saveAudit({
+            id: auditRecord?.id,
             postId: id,
             lastAuditDate: new Date().toISOString(),
             recommendation: analysis.recommendation,
@@ -99,7 +100,11 @@ export default async function PostPage({ params }: PageProps) {
             createdAt: post.date,
             modifiedAt: post.modified,
             redirectionUrl: analysis.redirectionTarget,
-            previousUrl: prevUrl // Preservar la URL previa
+            previousUrl: prevUrl,
+            status: auditRecord?.status || "audited",
+            keywords: post.meta?.rank_math_focus_keyword ? [post.meta.rank_math_focus_keyword] : undefined,
+            title: post.title.rendered,
+            link: post.link,
         });
 
         const getStatusIcon = (rec: string) => {

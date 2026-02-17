@@ -45,22 +45,27 @@ export async function POST(
             // Update local audit to mark as rewritten and store previous URL if slug changed
             const audits = await getAudits();
             const existing = audits[id];
+
             if (existing) {
                 await saveAudit({
                     ...existing,
-                    rewrittenAt: new Date().toISOString(),
+                    // rewrittenAt ya no se usa
                     previousUrl: slugChanged ? previousUrl : existing.previousUrl
                 });
             } else {
-                // If no audit exists, create a minimal one to track previous URL
+                // Si no existe auditoría, crear una mínima para rastrear la URL previa
                 await saveAudit({
                     postId: id,
                     lastAuditDate: new Date().toISOString(),
                     recommendation: 'audited',
                     priority: 'medium',
                     score: 0,
-                    rewrittenAt: new Date().toISOString(),
-                    previousUrl: slugChanged ? previousUrl : undefined
+                    previousUrl: slugChanged ? previousUrl : undefined,
+                    title: existingPost.title.rendered,
+                    link: existingPost.link,
+                    createdAt: existingPost.date,
+                    modifiedAt: existingPost.modified,
+                    status: 'audited',
                 });
             }
 

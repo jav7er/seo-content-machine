@@ -1,83 +1,10 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { createClient } from "@supabase/supabase-js";
 
-const DB_PATH = path.join(process.cwd(), 'data', 'content_audit.db');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Ensure data directory exists
-const dir = path.dirname(DB_PATH);
-if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase URL or Anon Key");
 }
 
-const db = new Database(DB_PATH);
-
-// Initialize schema
-db.exec(`
-    CREATE TABLE IF NOT EXISTS audit_logs (
-        post_id INTEGER PRIMARY KEY,
-        status TEXT,
-        priority TEXT,
-        score INTEGER,
-        rewritten_at TEXT,
-        redirection_url TEXT,
-        last_audit_at TEXT,
-        created_at TEXT,
-        modified_at TEXT,
-        manual_status TEXT,
-        previous_url TEXT
-    )
-`);
-
-export interface AuditRecord {
-    post_id: number;
-    status: string;
-    priority: string;
-    score: number;
-    rewritten_at?: string;
-    redirection_url?: string;
-    last_audit_at: string;
-    created_at?: string;
-    modified_at?: string;
-    manual_status?: string;
-    previous_url?: string;
-}
-
-export const auditDb = {
-    save: (record: AuditRecord) => {
-        const stmt = db.prepare(`
-            INSERT OR REPLACE INTO audit_logs 
-            (post_id, status, priority, score, rewritten_at, redirection_url, last_audit_at, created_at, modified_at, manual_status, previous_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        return stmt.run(
-            record.post_id,
-            record.status,
-            record.priority,
-            record.score,
-            record.rewritten_at || null,
-            record.redirection_url || null,
-            record.last_audit_at,
-            record.created_at || null,
-            record.modified_at || null,
-            record.manual_status || null,
-            record.previous_url || null
-        );
-    },
-
-    get: (postId: number): AuditRecord | undefined => {
-        const stmt = db.prepare('SELECT * FROM audit_logs WHERE post_id = ?');
-        return stmt.get(postId) as AuditRecord | undefined;
-    },
-
-    getAll: (): Record<number, AuditRecord> => {
-        const stmt = db.prepare('SELECT * FROM audit_logs');
-        const rows = stmt.all() as AuditRecord[];
-        return rows.reduce((acc, row) => {
-            acc[row.post_id] = row;
-            return acc;
-        }, {} as Record<number, AuditRecord>);
-    }
-};
-
-export default db;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

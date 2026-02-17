@@ -42,12 +42,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ran
     if (initialData.posts.length === 0 && Object.keys(storedAudits).length > 0) {
       initialData.posts = Object.values(storedAudits).map(audit => ({
         id: audit.postId,
-        title: { rendered: audit.previousUrl ? `Post #${audit.postId} (URL Original: ${audit.previousUrl})` : `Post #${audit.postId}` },
-        link: audit.previousUrl || "#",
+        title: { rendered: audit.title || `Post #${audit.postId}` },
+        link: audit.link || "#",
         date: audit.createdAt || new Date().toISOString(),
         modified: audit.modifiedAt || new Date().toISOString(),
-        status: "publish",
-        meta: { rank_math_focus_keyword: "" }
+        status: audit.status || "publish",
+        meta: audit.keywords ? { rank_math_focus_keyword: audit.keywords[0] } : { rank_math_focus_keyword: "" }
       }));
       initialData.total = initialData.posts.length;
     }
