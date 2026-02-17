@@ -1,0 +1,3 @@
+{
+  "/api/wordpress/upload/route": "app/api/wordpress/upload/route.js"
+}
