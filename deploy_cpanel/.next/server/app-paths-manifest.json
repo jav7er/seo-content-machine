@@ -1,0 +1,17 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/credentials/route": "app/api/credentials/route.js",
+  "/api/post/[id]/redirect/route": "app/api/post/[id]/redirect/route.js",
+  "/api/post/[id]/rewrite/route": "app/api/post/[id]/rewrite/route.js",
+  "/api/post/new/route": "app/api/post/new/route.js",
+  "/api/post/status/route": "app/api/post/status/route.js",
+  "/api/test-connection/route": "app/api/test-connection/route.js",
+  "/api/wordpress/data/route": "app/api/wordpress/data/route.js",
+  "/api/wordpress/upload/route": "app/api/wordpress/upload/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/post/[id]/page": "app/post/[id]/page.js",
+  "/post/new/page": "app/post/new/page.js",
+  "/settings/page": "app/settings/page.js"
+}

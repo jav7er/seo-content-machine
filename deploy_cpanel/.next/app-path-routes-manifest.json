@@ -1,0 +1,17 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/credentials/route": "/api/credentials",
+  "/api/post/[id]/redirect/route": "/api/post/[id]/redirect",
+  "/api/post/[id]/rewrite/route": "/api/post/[id]/rewrite",
+  "/api/post/new/route": "/api/post/new",
+  "/api/post/status/route": "/api/post/status",
+  "/api/test-connection/route": "/api/test-connection",
+  "/api/wordpress/data/route": "/api/wordpress/data",
+  "/api/wordpress/upload/route": "/api/wordpress/upload",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/post/[id]/page": "/post/[id]",
+  "/post/new/page": "/post/new",
+  "/settings/page": "/settings"
+}

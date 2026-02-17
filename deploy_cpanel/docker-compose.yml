@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seo-content-machine
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - seo_data:/app/data
+    environment:
+      - NODE_ENV=production
+      # Environment variables should be set in EasyPanel or .env file
+      # DO NOT commit secrets here
+
+volumes:
+  seo_data:

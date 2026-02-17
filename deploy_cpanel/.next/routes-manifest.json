@@ -1,0 +1,141 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/post/[id]/redirect",
+      "regex": "^/api/post/([^/]+?)/redirect(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/post/(?<nxtPid>[^/]+?)/redirect(?:/)?$"
+    },
+    {
+      "page": "/api/post/[id]/rewrite",
+      "regex": "^/api/post/([^/]+?)/rewrite(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/post/(?<nxtPid>[^/]+?)/rewrite(?:/)?$"
+    },
+    {
+      "page": "/post/[id]",
+      "regex": "^/post/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/post/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/credentials",
+      "regex": "^/api/credentials(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/credentials(?:/)?$"
+    },
+    {
+      "page": "/api/post/new",
+      "regex": "^/api/post/new(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/post/new(?:/)?$"
+    },
+    {
+      "page": "/api/post/status",
+      "regex": "^/api/post/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/post/status(?:/)?$"
+    },
+    {
+      "page": "/api/test-connection",
+      "regex": "^/api/test\\-connection(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/test\\-connection(?:/)?$"
+    },
+    {
+      "page": "/api/wordpress/data",
+      "regex": "^/api/wordpress/data(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wordpress/data(?:/)?$"
+    },
+    {
+      "page": "/api/wordpress/upload",
+      "regex": "^/api/wordpress/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wordpress/upload(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/post/new",
+      "regex": "^/post/new(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/post/new(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
